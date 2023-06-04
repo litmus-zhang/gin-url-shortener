@@ -1,9 +1,7 @@
 package main
 
 import (
-	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -88,30 +86,17 @@ func shortenHandler(c *gin.Context) {
 }
 
 func findUrlHandler(c *gin.Context) {
-	var data map[string]string
-	if err := c.ShouldBindJSON(&data); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Bad Request",
-		})
-		return
-	}
-	short := strings.Split(data["url"], ".com/")
-	log.Println(short[1], short[0])
-
+	id := c.Query("shorturl")
 	var url Url
-	db.Raw("SELECT * FROM urls WHERE short_url = ?", short[1]).Scan(&url)
+	db.Raw("SELECT * FROM urls WHERE short_url = ?", id).Scan(&url)
 	if url.Url == "" {
 		c.JSON(http.StatusNotFound, gin.H{
 			"message": "Long Url not found",
-			"data":    short[1] + " not found",
 		})
 		return
 	}
 
-	c.JSON(http.StatusPermanentRedirect, gin.H{
-		"message": "Long Url found",
-		"data":    url.Url,
-	})
+	c.Redirect(http.StatusTemporaryRedirect, url.Url)
 }
 func StatsHandler(c *gin.Context) {
 	var urls []Url
